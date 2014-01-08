@@ -24,16 +24,18 @@
 #define YY_EXIT_FAILURE -1
 #define YYPARSE_PARAM AssertsQuery
   
-  extern int cvclex(void);
+  extern int cvclex(void *);
   extern char* yytext;
   extern int cvclineno;
-  int yyerror(const char *s) {
+  int yyerror(void *YYPARSE_PARAM, const char *s) {
     cout << "syntax error: line " << cvclineno << "\n" << s << endl;    
     FatalError("");
     return YY_EXIT_FAILURE;
   };
   
   %}
+
+%param {void *YYPARSE_PARAM}
 
 %union {
 
@@ -199,7 +201,7 @@ other_cmd       :
 /*   ASTVec aaa = parserInterface->GetAsserts(); */
 /*   if(aaa.size() == 0) */
 /*     { */
-/*       yyerror("Fatal Error: parsing:  GetAsserts() call: no assertions: "); */
+/*       yyerror(YYPARSE_PARAM, "Fatal Error: parsing:  GetAsserts() call: no assertions: "); */
 /*     } */
 
 /*   ASTNode asserts =  */
@@ -225,7 +227,7 @@ other_cmd       :
   ASTVec aaa = parserInterface->GetAsserts();
   if(aaa.size() == 0)
     {
-      yyerror("Fatal Error: parsing:  GetAsserts() call: no assertions: ");
+      yyerror(YYPARSE_PARAM, "Fatal Error: parsing:  GetAsserts() call: no assertions: ");
     }
 
   ASTNode asserts = 
@@ -317,9 +319,9 @@ VarDecl         :      FORM_IDs ':' Type
   //do type checking. if doesn't pass then abort
   BVTypeCheck(*$5);
   if($3.indexwidth != $5->GetIndexWidth())
-    yyerror("Fatal Error: parsing: LET Expr: Type check fail: ");
+    yyerror(YYPARSE_PARAM, "Fatal Error: parsing: LET Expr: Type check fail: ");
   if($3.valuewidth != $5->GetValueWidth())
-    yyerror("Fatal Error: parsing: LET Expr: Type check fail: ");
+    yyerror(YYPARSE_PARAM, "Fatal Error: parsing: LET Expr: Type check fail: ");
                          
   for(vector<char*>::iterator i=$1->begin(),iend=$1->end();i!=iend;i++) {                         
     parserInterface->letMgr.LetExprMgr(*i,*$5);
@@ -332,9 +334,9 @@ VarDecl         :      FORM_IDs ':' Type
   //do type checking. if doesn't pass then abort
   BVTypeCheck(*$5);
   if($3.indexwidth != $5->GetIndexWidth())
-    yyerror("Fatal Error: parsing: LET Expr: Type check fail: ");
+    yyerror(YYPARSE_PARAM, "Fatal Error: parsing: LET Expr: Type check fail: ");
   if($3.valuewidth != $5->GetValueWidth())
-    yyerror("Fatal Error: parsing: LET Expr: Type check fail: ");
+    yyerror(YYPARSE_PARAM, "Fatal Error: parsing: LET Expr: Type check fail: ");
                          
   for(vector<char*>::iterator i=$1->begin(),iend=$1->end();i!=iend;i++) {                         
     parserInterface->letMgr.LetExprMgr(*i,*$5);
@@ -409,9 +411,9 @@ IfExpr          :      IF_TOK Formula THEN_TOK Expr ElseRestExpr
 {
   unsigned int width = $4->GetValueWidth();
   if (width != $5->GetValueWidth())
-    yyerror("Width mismatch in IF-THEN-ELSE");                   
+    yyerror(YYPARSE_PARAM, "Width mismatch in IF-THEN-ELSE");
   if($4->GetIndexWidth() != $5->GetIndexWidth())
-    yyerror("Width mismatch in IF-THEN-ELSE");
+    yyerror(YYPARSE_PARAM, "Width mismatch in IF-THEN-ELSE");
 
   BVTypeCheck(*$2);
   BVTypeCheck(*$4);
@@ -428,9 +430,9 @@ ElseRestExpr    :      ELSE_TOK Expr ENDIF_TOK  { $$ = $2; }
 {
   unsigned int width = $2->GetValueWidth();
   if (width != $4->GetValueWidth() || width != $5->GetValueWidth())
-    yyerror("Width mismatch in IF-THEN-ELSE");
+    yyerror(YYPARSE_PARAM, "Width mismatch in IF-THEN-ELSE");
   if ($2->GetIndexWidth() != $4->GetValueWidth() || $2->GetIndexWidth() != $5->GetValueWidth())
-    yyerror("Width mismatch in IF-THEN-ELSE");
+    yyerror(YYPARSE_PARAM, "Width mismatch in IF-THEN-ELSE");
 
   BVTypeCheck(*$2);
   BVTypeCheck(*$4);
@@ -461,7 +463,7 @@ Formula         :     '(' Formula ')'
 {
   unsigned int width = $3->GetValueWidth();
   if(width <= (unsigned)$5)
-    yyerror("Fatal Error: BOOLEXTRACT: trying to boolextract a bit which beyond range");
+    yyerror(YYPARSE_PARAM, "Fatal Error: BOOLEXTRACT: trying to boolextract a bit which beyond range");
                          
   ASTNode hi  =  parserInterface->CreateBVConst(32, $5);
   ASTNode low =  parserInterface->CreateBVConst(32, $5);
@@ -631,7 +633,7 @@ ElseRestForm    :      ELSE_TOK Formula ENDIF_TOK  { $$ = $2; }
 } | STRING_TOK
 {
    cerr << "Unresolved symbol:" << $1 << endl;
-   yyerror("bad symbol"); 
+   yyerror(YYPARSE_PARAM, "bad symbol");
 }
 ;
 
@@ -708,10 +710,10 @@ Expr            :      TERMID_TOK { $$ = new ASTNode(parserInterface->letMgr.Res
 {
   int width = $3 - $5 + 1;
   if (width < 0)
-    yyerror("Negative width in extract");
+    yyerror(YYPARSE_PARAM, "Negative width in extract");
                          
   if((unsigned)$3 >= $1->GetValueWidth())
-    yyerror("Parsing: Wrong width in BVEXTRACT\n");                      
+    yyerror(YYPARSE_PARAM, "Parsing: Wrong width in BVEXTRACT\n");
 
   ASTNode hi  =  parserInterface->CreateBVConst(32, $3);
   ASTNode low =  parserInterface->CreateBVConst(32, $5);
@@ -730,7 +732,7 @@ Expr            :      TERMID_TOK { $$ = new ASTNode(parserInterface->letMgr.Res
 {
   unsigned int width = $1->GetValueWidth();
   if (width != $3->GetValueWidth()) {
-    yyerror("Width mismatch in AND");
+    yyerror(YYPARSE_PARAM, "Width mismatch in AND");
   }
   ASTNode * n = new ASTNode(parserInterface->nf->CreateTerm(BVAND, width, *$1, *$3));
   $$ = n;
@@ -741,7 +743,7 @@ Expr            :      TERMID_TOK { $$ = new ASTNode(parserInterface->letMgr.Res
 {
   unsigned int width = $1->GetValueWidth();
   if (width != $3->GetValueWidth()) {
-    yyerror("Width mismatch in OR");
+    yyerror(YYPARSE_PARAM, "Width mismatch in OR");
   }
   ASTNode * n = new ASTNode(parserInterface->nf->CreateTerm(BVOR, width, *$1, *$3)); 
   $$ = n;
@@ -752,7 +754,7 @@ Expr            :      TERMID_TOK { $$ = new ASTNode(parserInterface->letMgr.Res
 {
   unsigned int width = $3->GetValueWidth();
   if (width != $5->GetValueWidth()) {
-    yyerror("Width mismatch in XOR");
+    yyerror(YYPARSE_PARAM, "Width mismatch in XOR");
   }
   ASTNode * n = new ASTNode(parserInterface->nf->CreateTerm(BVXOR, width, *$3, *$5));
   $$ = n;
@@ -763,7 +765,7 @@ Expr            :      TERMID_TOK { $$ = new ASTNode(parserInterface->letMgr.Res
 {
   unsigned int width = $3->GetValueWidth();
   if (width != $5->GetValueWidth()) {
-    yyerror("Width mismatch in NAND");
+    yyerror(YYPARSE_PARAM, "Width mismatch in NAND");
   }
   ASTNode * n = new ASTNode(parserInterface->nf->CreateTerm(BVNAND, width, *$3, *$5));
   $$ = n;
@@ -775,7 +777,7 @@ Expr            :      TERMID_TOK { $$ = new ASTNode(parserInterface->letMgr.Res
 {
   unsigned int width = $3->GetValueWidth();
   if (width != $5->GetValueWidth()) {
-    yyerror("Width mismatch in NOR");
+    yyerror(YYPARSE_PARAM, "Width mismatch in NOR");
   }
   ASTNode * n = new ASTNode(parserInterface->nf->CreateTerm(BVNOR, width, *$3, *$5));
   $$ = n;
@@ -787,7 +789,7 @@ Expr            :      TERMID_TOK { $$ = new ASTNode(parserInterface->letMgr.Res
 {
   unsigned int width = $3->GetValueWidth();
   if (width != $5->GetValueWidth()) {
-    yyerror("Width mismatch in NOR");
+    yyerror(YYPARSE_PARAM, "Width mismatch in NOR");
   }
   ASTNode * n = new ASTNode(parserInterface->nf->CreateTerm(BVXNOR, width, *$3, *$5));
   $$ = n;
@@ -942,7 +944,7 @@ Expr            :      TERMID_TOK { $$ = new ASTNode(parserInterface->letMgr.Res
 } | STRING_TOK
 {
    cerr << "Unresolved symbol:" << $1 << endl;
-   yyerror("bad symbol"); 
+   yyerror(YYPARSE_PARAM, "bad symbol");
 }
 ;
 
@@ -1022,9 +1024,9 @@ LetDecl         :       STRING_TOK '=' Expr
   BVTypeCheck(*$5);
                           
   if($3.indexwidth != $5->GetIndexWidth())
-    yyerror("Fatal Error: parsing: LET Expr: Type check fail: ");
+    yyerror(YYPARSE_PARAM, "Fatal Error: parsing: LET Expr: Type check fail: ");
   if($3.valuewidth != $5->GetValueWidth())
-    yyerror("Fatal Error: parsing: LET Expr: Type check fail: ");
+    yyerror(YYPARSE_PARAM, "Fatal Error: parsing: LET Expr: Type check fail: ");
 
   parserInterface->letMgr.LetExprMgr($1,*$5);
   free( $1);
@@ -1046,9 +1048,9 @@ LetDecl         :       STRING_TOK '=' Expr
   BVTypeCheck(*$5);
 
   if($3.indexwidth != $5->GetIndexWidth())
-    yyerror("Fatal Error: parsing: LET Expr: Type check fail: ");
+    yyerror(YYPARSE_PARAM, "Fatal Error: parsing: LET Expr: Type check fail: ");
   if($3.valuewidth != $5->GetValueWidth())
-    yyerror("Fatal Error: parsing: LET Expr: Type check fail: ");
+    yyerror(YYPARSE_PARAM, "Fatal Error: parsing: LET Expr: Type check fail: ");
 
   //Do LET-expr management
   parserInterface->letMgr.LetExprMgr($1,*$5);

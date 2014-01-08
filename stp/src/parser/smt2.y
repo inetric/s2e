@@ -56,9 +56,9 @@
   
   extern char* smt2text;
   extern int smt2lineno;
-  extern int smt2lex(void);
+  extern int smt2lex(void *);
 
-  int yyerror(const char *s) {
+  int yyerror(void *YYPARSE_PARAM, const char *s) {
     cout << "syntax error: line " << smt2lineno << "\n" << s << endl;
     cout << "  token: " << smt2text << endl;
     FatalError("");
@@ -74,6 +74,8 @@
 #define YY_EXIT_FAILURE -1
 #define YYPARSE_PARAM AssertsQuery
   %}
+
+%param {void *YYPARSE_PARAM}
 
 %union {  
   unsigned uintval;                  /* for numerals in types. */
@@ -226,7 +228,7 @@ cmdi:
 	  if (!(0 == strcmp($3->c_str(),"QF_BV") ||
 	        0 == strcmp($3->c_str(),"QF_ABV") ||
 	        0 == strcmp($3->c_str(),"QF_AUFBV"))) {
-	    yyerror("Wrong input logic:");
+	    yyerror(YYPARSE_PARAM, "Wrong input logic:");
 	  }
 	  parserInterface->success();
 	  delete $3;
@@ -284,7 +286,7 @@ STRING_TOK {
   else if (0 == strcmp($1->c_str(), "unknown"))
   	input_status = TO_BE_UNKNOWN; 
   else 
-  	yyerror($1->c_str());
+	yyerror(YYPARSE_PARAM, $1->c_str());
   delete $1;
   $$ = NULL; 
 }
@@ -655,10 +657,10 @@ TERMID_TOK
 {
   int width = $4 - $5 + 1;
   if (width < 0)
-    yyerror("Negative width in extract");
+    yyerror(YYPARSE_PARAM, "Negative width in extract");
       
   if((unsigned)$4 >= $7->GetValueWidth())
-    yyerror("Parsing: Wrong width in BVEXTRACT\n");                      
+    yyerror(YYPARSE_PARAM, "Parsing: Wrong width in BVEXTRACT\n");
       
   ASTNode hi  =  parserInterface->CreateBVConst(32, $4);
   ASTNode low =  parserInterface->CreateBVConst(32, $5);

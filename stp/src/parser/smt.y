@@ -46,9 +46,9 @@
   
   extern char* smttext;
   extern int smtlineno;
-  extern int smtlex(void);
+  extern int smtlex(void*);
 
-  int yyerror(const char *s) {
+  int yyerror(void *YYPARSE_PARAM, const char *s) {
     cout << "syntax error: line " << smtlineno << "\n" << s << endl;
     cout << "  token: " << smttext << endl;
     FatalError("");
@@ -62,6 +62,8 @@
 #define YY_EXIT_FAILURE -1
 #define YYPARSE_PARAM AssertsQuery
   %}
+
+%param {void *YYPARSE_PARAM}
 
 %union {  
   // FIXME: Why is this not an UNSIGNED int?
@@ -307,7 +309,7 @@ COLON_TOK ASSUMPTION_TOK an_formula
         0 == strcmp($3->c_str(),"QF_BV") ||
         //0 == strcmp($3->c_str(),"QF_UF") ||
         0 == strcmp($3->c_str(),"QF_AUFBV"))) {
-    yyerror("Wrong input logic:");
+    yyerror(YYPARSE_PARAM, "Wrong input logic:");
   }
   delete $3;
   $$ = NULL;
@@ -731,10 +733,10 @@ BITCONST_TOK { $$ = $1; }
 {
   int width = $3 - $5 + 1;
   if (width < 0)
-    yyerror("Negative width in extract");
+    yyerror(YYPARSE_PARAM, "Negative width in extract");
       
   if((unsigned)$3 >= $7->GetValueWidth())
-    yyerror("Parsing: Wrong width in BVEXTRACT\n");                      
+    yyerror(YYPARSE_PARAM, "Parsing: Wrong width in BVEXTRACT\n");
       
   ASTNode hi  =  parserInterface->CreateBVConst(32, $3);
   ASTNode low =  parserInterface->CreateBVConst(32, $5);
@@ -968,7 +970,7 @@ BITCONST_TOK { $$ = $1; }
   else
     {
       n = NULL; // remove gcc warning.
-      yyerror("Rotate must be strictly less than the width.");
+      yyerror(YYPARSE_PARAM, "Rotate must be strictly less than the width.");
     }
       
   $$ = n;
@@ -999,7 +1001,7 @@ BITCONST_TOK { $$ = $1; }
   else
     {
       n = NULL; // remove gcc warning.
-      yyerror("Rotate must be strictly less than the width.");
+      yyerror(YYPARSE_PARAM, "Rotate must be strictly less than the width.");
     }
       
   $$ = n;

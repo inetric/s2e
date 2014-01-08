@@ -12,10 +12,13 @@
 #include "parsecvc.hpp"
 #include "ParserInterface.h"
 
+#define YYPARSE_PARAM AssertsQuery
+#define YY_DECL int cvclex(void *YYPARSE_PARAM)
+
   using namespace std;
   using namespace BEEV;  
   extern char *yytext;
-  extern int cvcerror (const char *msg);
+  extern int cvcerror (void *, const char *msg);
 %}
 
 %option noyywrap
@@ -153,5 +156,5 @@ ANYTHING ({LETTER}|{DIGIT}|{OPCHAR})
 	return STRING_TOK;
 }
 
-.                { cvcerror("Illegal input character."); }
+.                { cvcerror(YYPARSE_PARAM, "Illegal input character."); }
 %%

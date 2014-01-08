@@ -46,8 +46,11 @@
 #include "parsesmt2.hpp"
 #include "ParserInterface.h"
 
+#define YYPARSE_PARAM AssertsQuery
+#define YY_DECL int smt2lex(void *YYPARSE_PARAM)
+
   extern char *smt2text;
-  extern int smt2error (const char *msg);
+  extern int smt2error (void *, const char *msg);
 
   // File-static (local to this file) variables and functions
   static std::string _string_lit;  
@@ -251,5 +254,5 @@ bv{DIGIT}+	{ smt2lval.str = new std::string(smt2text+2); return BVCONST_DECIMAL_
 ({LETTER}|{OPCHAR})({ANYTHING})*	{return lookup(smt2text);}
 \|([^\|]|\n)*\| {return lookup(smt2text);}
 
-. { smt2error("Illegal input character."); }
+. { smt2error(YYPARSE_PARAM, "Illegal input character."); }
 %%

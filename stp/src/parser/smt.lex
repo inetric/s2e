@@ -38,11 +38,14 @@
 #include "parsesmt.hpp"
 #include "ParserInterface.h"
 
+#define YYPARSE_PARAM AssertsQuery
+#define YY_DECL int smtlex(void *YYPARSE_PARAM)
+
   using namespace std;
   using namespace BEEV;
   
   extern char *smttext;
-  extern int smterror (const char *msg);
+  extern int smterror (void *, const char *msg);
 
   // File-static (local to this file) variables and functions
   static std::string _string_lit;  
@@ -249,5 +252,5 @@ bit{DIGIT}+     {
 	smtlval.str = new std::string(str);
 	return STRING_TOK;
 }
-. { smterror("Illegal input character."); }
+. { smterror(YYPARSE_PARAM, "Illegal input character."); }
 %%
